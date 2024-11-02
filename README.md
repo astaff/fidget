@@ -29,13 +29,13 @@ I thought it would be a fun exercise to make my own version of it and share it w
 1. Install uv (if you haven't already):
 
 ```sh
-curl -fsSL https://get.astral.sh/uv/install.sh | bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 2. Create a virtual environment and install all dependencies (including dev):
 
 ```sh
-uv venv
+uv venv --python 3.12
 source .venv/bin/activate # On Windows use: .venv\Scripts\activate
 uv sync --all-extras --dev
 uv pip install jupyter
@@ -44,7 +44,7 @@ uv pip install jupyter
 ## Usage
 
 ```sh
-uv jupyter notebook
+uv run jupyter notebook
 ```
 
 Check out the [example notebook](example.ipynb) to learn how to:
