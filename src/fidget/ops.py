@@ -54,12 +54,12 @@ def build_pin(config: PinConfig) -> Pin:
         profiles = {
             True: [
                 (2.5, 0), (2.5, 1.25), (5, 2.5), (10, 3.5),
-                (11, 2.5), (13, 2.5), (14, 3.5), (19, 2.5),
-                (21.5, 1.25), (21.5, 0)
+                (11, 2.75), (11+config.center_length, 2.75), (12+config.center_length, 3.5), (17+config.center_length, 2.5),
+                (19.5+config.center_length, 1.25), (19.5+config.center_length, 0)
             ],
             False: [
-                (4, 0), (5, 1), (19, 1), (20, 0),
-                (19, -1), (5, -1), (4, 0)
+                (4, 0), (6, 1), (16+config.center_length, 1), (18+config.center_length, 0),
+                (16+config.center_length, -1), (6, -1), (4, 0)
             ]
         }
         return [(y, x) for x, y in profiles[is_outer]]
@@ -140,6 +140,22 @@ def build_gear(config: GearConfig) -> Gear:
 def build_shape(config: ShapeConfig) -> Shape:
     def create_centered_shape(shape):
         shape.apply_translation(-shape.centroid)
+        # Convert polar angles to rotation matrix using Euler angles
+        rotation_matrix = trimesh.transformations.euler_matrix(
+            config.rotation[0],  # phi (azimuthal)
+            config.rotation[1],  # theta (polar) 
+            config.rotation[2],  # psi (roll)
+            'rxyz'
+        )
+        shape.apply_transform(rotation_matrix)
+        scale_matrix = np.array([
+            [config.scale[0], 0, 0, 0],
+            [0, config.scale[1], 0, 0],
+            [0, 0, config.scale[2], 0],
+            [0, 0, 0, 1]
+        ])
+        shape.apply_transform(scale_matrix)
+        shape.apply_translation(config.offset)
         return shape
 
     if config.shape_type == ShapeType.CUSTOM:

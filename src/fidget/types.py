@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class PinConfig(BaseModel):
     length: float
     diameter: float
+    center_length: float
 
 class PrintLayoutConfig(BaseModel):
     row_spacing: float
@@ -26,6 +27,7 @@ class ShapeType(Enum):
     CUBE = "cube"
     SPHERE = "sphere"
     CYLINDER = "cylinder"
+    PYRAMID = "pyramid"
     CUSTOM = "custom"
 
 class ShapeConfig(BaseModel):
@@ -36,7 +38,7 @@ class ShapeConfig(BaseModel):
     stl_path: Union[str, Path, None] = Field(default=None, description="Path to STL file for custom shape")
     offset: Tuple[float, float, float] = Field(default=(0, 0, 0), description="Offset for shape")
     rotation: Tuple[float, float, float] = Field(default=(0, 0, 0), description="Rotation for shape")
-    scale: float = Field(default=1.0, description="Scale for shape")
+    scale: Tuple[float, float, float] = Field(default=(1.0, 1.0, 1.0), description="Scale for shape")
 
 class FidgetConfig(BaseModel):
     core_diameter: float
