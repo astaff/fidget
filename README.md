@@ -10,15 +10,9 @@ This is a minimalist tool for building mechanical fidget toys through functional
 
 <img src="./assets/cube.png" alt="Cube" width="300"/>
 
-A cubic configuration.
-
 <img src="./assets/sphere.png" alt="Sphere" width="300"/>
 
-A spherical variant.
-
 <img src="./assets/hyperboloid.png" alt="Hyperboloid" width="300"/>
-
-A hyperboloid variant.
 
 ## Why?
 
