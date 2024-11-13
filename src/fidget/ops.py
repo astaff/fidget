@@ -53,13 +53,13 @@ def build_pin(config: PinConfig) -> Pin:
     def get_profile(is_outer: bool) -> list[tuple[float, float]]:
         profiles = {
             True: [
-                (2.5, 0), (2.5, 1.25), (5, 2.5), (10, 3.5),
-                (11, 2.75), (11+config.center_length, 2.75), (12+config.center_length, 3.5), (17+config.center_length, 2.5),
+                (2.5, 0), (2.5, 1.25), (5, 2.5), (10, 3.25),
+                (11, 2.75), (11+config.center_length, 2.75), (12+config.center_length, 3.25), (17+config.center_length, 2.5),
                 (19.5+config.center_length, 1.25), (19.5+config.center_length, 0)
             ],
             False: [
-                (4, 0), (6, 1), (16+config.center_length, 1), (18+config.center_length, 0),
-                (16+config.center_length, -1), (6, -1), (4, 0)
+                (5, 0), (6, -1), (16+config.center_length, -1), (17+config.center_length, 0),
+                (16+config.center_length, 1), (6, 1), (5, 0)
             ]
         }
         return [(y, x) for x, y in profiles[is_outer]]
