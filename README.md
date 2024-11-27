@@ -20,7 +20,7 @@ A spherical variant, other shapes are possible.
 
 <img src="./assets/batch.jpg" alt="Batch of Cubes" width="300"/>
 
-For all friends and family a batch of cubes.
+A batch of colorful cubes.
 
 ## Why?
 
