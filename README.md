@@ -14,6 +14,12 @@ This is a minimalist tool for building mechanical fidget toys through functional
 
 <img src="./assets/hyperboloid.png" alt="Hyperboloid" width="300"/>
 
+## Prints
+
+<img src="./assets/batch.jpg" alt="Batch of Cubes" width="300"/>
+
+A batch of colorful cubes.
+
 ## Why?
 
 I got fascinated by this [Gear Ball](https://thangs.com/designer/RuvenBals/3d-model/Gear%20Ball-1069853) I saw at my friend's place in San Francisco. He was kind enough to give it to me and I promised to make a cube version of it.
