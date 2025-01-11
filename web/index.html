@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GLTF Viewer</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .mesh-control {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="file" id="fileInput" accept=".gltf,.glb" />
+        <div style="margin: 10px 0;">
+            <label for="globalColor">All Colors: </label>
+            <input type="color" id="globalColor" value="#ffffff" />
+        </div>
+        <div id="meshToggles"></div>
+    </div>
+    <div id="container"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let lastTime = 0;
+        let lights = [];
+        const rotationSpeed = Math.PI / 2; // 90 degrees per second in radians
+
+        // Define rotation axes for each mesh
+        const meshRotations = {
+            "geometry_1": new THREE.Vector3(1, 1, 1),
+            "geometry_2": new THREE.Vector3(-1, 1, -1),
+            "geometry_3": new THREE.Vector3(1, -1, -1),
+            "geometry_4": new THREE.Vector3(-1, -1, 1),
+            "geometry_5": new THREE.Vector3(1, -1, -1),
+            "geometry_6": new THREE.Vector3(-1, -1, 1),
+            "geometry_7": new THREE.Vector3(1, 1, 1),
+            "geometry_8": new THREE.Vector3(-1, 1, -1)
+        };
+
+        // Normalize all rotation vectors
+        Object.keys(meshRotations).forEach(key => {
+            meshRotations[key].normalize();
+        });
+
+        // Track active meshes
+        let activeMeshes = new Map();
+
+        // Add these variables at the top with your other global variables
+        const orbitConfig = {
+            radius: 100,
+            height: 40,
+            elevationAngle: THREE.MathUtils.degToRad(30), // 30 degrees up from horizontal
+            startingAzimuth: 0
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(5, 5, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            setupLights();
+            
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            animate();
+
+            // Add global color picker event listener
+            document.getElementById('globalColor').addEventListener('change', function(event) {
+                activeMeshes.forEach((mesh) => {
+                    if (Array.isArray(mesh.material)) {
+                        mesh.material.forEach(mat => {
+                            mat.color.set(event.target.value);
+                        });
+                    } else {
+                        mesh.material.color.set(event.target.value);
+                    }
+                });
+            });
+        }
+
+        function setupLights() {
+            // Clear existing lights
+            lights.forEach(light => scene.remove(light));
+            lights = [];
+
+            // Ambient light for base illumination
+            const ambient = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambient);
+            lights.push(ambient);
+
+            // Create lights at each corner of a cube
+            const corners = [
+                [1, 1, 1],   // top-front-right
+                [1, 1, -1],  // top-front-left
+                [1, -1, 1],  // top-back-right
+                [1, -1, -1], // top-back-left
+                [-1, 1, 1],  // bottom-front-right
+                [-1, 1, -1], // bottom-front-left
+                [-1, -1, 1], // bottom-back-right
+                [-1, -1, -1] // bottom-back-left
+            ];
+
+            corners.forEach(([x, y, z]) => {
+                const directional = new THREE.DirectionalLight(0xffffff, 0.6);
+                directional.position.set(x * 5, y * 5, z * 5); // Scale the position out
+                scene.add(directional);
+                lights.push(directional);
+            });
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const loader = new THREE.GLTFLoader();
+            const url = URL.createObjectURL(file);
+
+            // Remove old content but keep lights
+            scene.children.forEach(child => {
+                if (!lights.includes(child)) {
+                    scene.remove(child);
+                }
+            });
+
+            loader.load(url, function(gltf) {
+                scene.add(gltf.scene);
+
+                // Find and store all target meshes
+                gltf.scene.traverse(function(child) {
+                    if (child.isMesh && meshRotations.hasOwnProperty(child.name)) {
+                        activeMeshes.set(child.name, child);
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                // Create visibility toggles
+                createMeshToggles();
+
+                // Position camera to view the model
+                const box = new THREE.Box3().setFromObject(gltf.scene);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                camera.position.copy(center).add(new THREE.Vector3(maxDim, maxDim, maxDim));
+                controls.target.copy(center);
+                controls.update();
+            });
+        }
+
+        function createMeshToggles() {
+            const container = document.getElementById('meshToggles');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= 8; i++) {
+                const meshName = `geometry_${i}`;
+                const mesh = activeMeshes.get(meshName);
+                
+                const div = document.createElement('div');
+                div.className = 'mesh-control';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `toggle-${meshName}`;
+                checkbox.checked = mesh ? mesh.visible : false;
+                checkbox.disabled = !mesh;
+                
+                const label = document.createElement('label');
+                label.htmlFor = `toggle-${meshName}`;
+                label.textContent = ` ${meshName}`;
+                
+                checkbox.onchange = function() {
+                    const targetMesh = activeMeshes.get(meshName);
+                    if (targetMesh) {
+                        targetMesh.visible = checkbox.checked;
+                    }
+                };
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                container.appendChild(div);
+            }
+        }
+
+        function animate(currentTime = 0) {
+            requestAnimationFrame(animate);
+
+            if (lastTime !== 0) {
+                const deltaTime = (currentTime - lastTime) / 1000;
+                
+                // Update rotation for each active mesh
+                activeMeshes.forEach((mesh, name) => {
+                    const rotationAxis = meshRotations[name];
+                    const quaternion = new THREE.Quaternion();
+                    quaternion.setFromAxisAngle(rotationAxis, rotationSpeed * deltaTime);
+                    mesh.quaternion.multiplyQuaternions(quaternion, mesh.quaternion);
+                });
+
+                // Orbit camera around the scene
+                const orbitSpeed = THREE.MathUtils.degToRad(30); // 30 degrees per second
+                const newAzimuth = orbitConfig.startingAzimuth + orbitSpeed * deltaTime;
+                orbitConfig.startingAzimuth = newAzimuth;
+
+                // Calculate camera position using spherical coordinates
+                camera.position.x = orbitConfig.radius * Math.cos(orbitConfig.elevationAngle) * Math.sin(newAzimuth);
+                camera.position.z = orbitConfig.radius * Math.cos(orbitConfig.elevationAngle) * Math.cos(newAzimuth);
+                camera.position.y = orbitConfig.radius * Math.sin(orbitConfig.elevationAngle);
+                
+                camera.lookAt(0, 0, 0);
+            }
+            
+            lastTime = currentTime;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
